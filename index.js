@@ -6,34 +6,67 @@ const Employee = require('./lib/Employee.js');
 const Engineer = require('./lib/Engineer.js');
 const Intern = require('./lib/Intern.js');
 const Manager = require('./lib/Manager');
+const { writeFile, copyFile } = require('./src/generate-site');
 // TODO: Create an array of questions for user input
 
-let listOfEmployees = [];
-let htmlStr = '';
 
-const promptUser = () => {
+
+const promptManager = () => {
     return inquirer
         .prompt([
             {
                 type: 'input',
-                name: 'name',
-                message: "What is employee's name?",
+                name: 'manager',
+                message: "What is the manager's name?",
             },
             {
                 type: 'input',
                 name: 'email',
-                message: "What is employee's email?",
+                message: "What is manager's email?",
             },
             {
                 type: 'input',
                 name: 'id',
-                message: "What is employee's id?",
+                message: "What is manager's id?",
             },
+            {
+                type: 'input',
+                name: 'office',
+                message: "What is manager's office number?",
+            }
+        ]);
+};
+const promptTeam = employeeData => {
+
+    if (!employeeData.roster) {
+        employeeData.roster = [];
+    }
+
+    return inquirer
+        .prompt([
             {
                 type: 'list',
                 name: 'type',
-                message: 'Specify Employee Type',
-                choices: ['Manager', 'Intern', 'Engineer', 'General Employee']
+                message: 'Add Engineer or Intern',
+                choices: ['Engineer', 'Intern', 'Finished building team']
+            },
+            {
+                type: 'input',
+                name: 'name',
+                message: "Enter the employee's name",
+                when: (answers) => answers.type === 'Engineer' || answers.type === 'Intern'
+            },
+            {
+                type: 'input',
+                name: 'email',
+                message: "Enter the employee's email",
+                when: (answers) => answers.type === 'Engineer' || answers.type === 'Intern'
+            },
+            {
+                type: 'input',
+                name: 'id',
+                message: "Enter the employee's ID",
+                when: (answers) => answers.type === 'Engineer' || answers.type === 'Intern'
             },
             {
                 type: 'input',
@@ -43,70 +76,63 @@ const promptUser = () => {
             },
             {
                 type: 'input',
-                name: 'office',
-                message: "Enter the Manager's Office Number",
-                when: (answers) => answers.type === 'Manager'
-            },
-            {
-                type: 'input',
                 name: 'github',
                 message: "Enter the Engineer's github",
                 when: (answers) => answers.type === 'Engineer'
             },
             {
                 type: 'confirm',
-                name: 'confirmAddEmployee',
-                message: 'Would you like to enter another employee?',
+                name: 'confirmTeam',
+                message: "Are you sure your team is done?",
+                when: (answers) => answers.type === 'Finished building team',
                 default: false
             }
-        ]
-        )
-        .then(indData => {
-            if (indData.type = 'Manager') {
-                let manager = new Manager(indData.name, indData.id, indData.email, indData.officeNumber);
-                let x = manager.turnselfIntoHTMLStr();
-                htmlStr = htmlStr + x;
-
+        ])
+        .then(teamData => {
+            employeeData.roster.push(teamData);
+            if (teamData.confirmTeam) {
+                return employeeData;
             }
-            else if (indData.type = 'Intern') {
-                let intern = new Intern(indData.name, indData.id, indData.email, indData.school);
-                let x = manager.turnselfIntoHTMLStr();
-                htmlStr = htmlStr + x;
-
+            else {
+                return promptTeam(employeeData)
             }
-            if (indData.type = 'Manager') {
-                let manager = new Manager(indData.name, indData.id, indData.email, indData.officeNumber);
-                let x = manager.turnselfIntoHTMLStr();
-                htmlStr = htmlStr + x;
 
-            }
-            if (indData.type = 'Manager') {
-                let manager = new Manager(indData.name, indData.id, indData.email, indData.officeNumber);
-                let x = manager.turnselfIntoHTMLStr();
-                htmlStr = htmlStr + x;
-
-            }
-            listOfEmployees.push(indData);
-            if (indData.confirmAddEmployee) {
-                return promptUser();
-            } else {
-                return listOfEmployees;
-            }
-        }
-        );
-
+        })
 }
 
+promptManager()
+    .then(promptTeam)
+    .then(employeeData => {
+        console.log(employeeData)
+        return generateHTML(employeeData)
+    })
+    .then(pageHTML => {
+        return writeFile(pageHTML);
+    })
+    .then(writeFileResponse => {
+        console.log(writeFileResponse);
+        return copyFile();
+    })
+    .then(copyFileResponse => {
+        console.log(copyFileResponse);
+    })
+    .catch(err => {
+        console.log(err);
+    });
 
-newArray = []
-
-promptUser().then((arrayOfEmplObjs) => {
-    for (var i = 0; i < arrayOfEmplObjs.length; i++) {
-        newArray.push(`<div><h2>${arrayOfEmplObjs[i].name}</h2>
-<p>${arrayOfEmplObjs[i].email}</p>
-<p>id number: ${arrayOfEmplObjs[i].id}</p>
-<p>Employee type: ${arrayOfEmplObjs[i].type}</p>
-</div>`)
-    }
-}).then(why => { return newArray.join(',') }).then(data => fs.writeFileSync('./dist/index.html', generateHTML(data), err => { }))
+/* emplRoster = []
+promptManager().then((answers) => {
+    const manager = new Manager(answers);
+    //console.log(manager)
+})
+    .then(promptTeam).then((teamMates) => {
+        teamMates.forEach(person => {
+            if (person.type == "Engineer") {
+                emplRoster.push(new Engineer(person))
+            }
+            else {
+                emplRoster.push(new Intern(person))
+            }
+        })
+    }) */
 
